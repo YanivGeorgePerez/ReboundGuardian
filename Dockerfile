@@ -1,21 +1,15 @@
-# Use official Bun base image
+# 🚀 Fast build Dockerfile
 FROM oven/bun:latest
-
-# Set working directory
 WORKDIR /app
 
-# Only copy files that are needed to install deps first (for caching)
-COPY bun.lock bun.lock
-COPY package.json package.json
+# Only copy deps files first
+COPY bun.lockb package.json ./
 
-# Install dependencies (cached if package.json and lock didn't change)
+# Install deps (cached if lockfile didn't change)
 RUN bun install --frozen-lockfile
 
-# Copy all source files (after deps)
+# Copy everything else (source code)
 COPY . .
 
-# Expose port for server
 EXPOSE 3000
-
-# Use native Bun command to run the app
 CMD ["bun", "server.js"]
