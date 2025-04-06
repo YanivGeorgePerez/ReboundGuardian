@@ -16,24 +16,35 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// EJS setup
+// Set EJS as the view engine
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// Session configuration
+// ----------------------
+// SESSION CONFIGURATION
+// ----------------------
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || 'keyboard cat',
   resave: false,
-  saveUninitialized: true
+  saveUninitialized: true,
+  cookie: {
+    secure: false, // Set true ONLY if behind HTTPS (like in production)
+    httpOnly: true,
+    sameSite: 'lax'
+  }
 });
 
 app.use(sessionMiddleware);
 app.use(bodyParser.json());
 
-// Static files (CSS, JS)
+// ----------------------
+// STATIC FILES
+// ----------------------
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Socket.io with session handling
+// ----------------------
+// SOCKET.IO HANDLING
+// ----------------------
 io.use((socket, next) => {
   sessionMiddleware(socket.request, {}, next);
 });
@@ -48,39 +59,42 @@ io.on('connection', (socket) => {
   });
 });
 
-// Helper: ensure session tokens exist
+// ----------------------
+// UTIL FUNCTION
+// ----------------------
 function initSessionData(req) {
-  if (!req.session.tokens) {
-    req.session.tokens = [];
-  }
+  if (!req.session.tokens) req.session.tokens = [];
 }
 
-// Add token route w/ reCAPTCHA
+// ----------------------
+// API: ADD TOKEN
+// ----------------------
 app.post('/api/addToken', async (req, res) => {
   initSessionData(req);
 
-  const captchaToken = req.body.captchaToken;
-  if (!captchaToken) {
-    return res.status(400).json({ error: 'Missing reCAPTCHA token.' });
-  }
+  const { captchaToken, token } = req.body;
+  if (!token) return res.status(400).json({ error: 'No Discord token provided.' });
 
-  const captchaVerifyUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.CAPTCHA_SECRET_KEY}&response=${captchaToken}`;
-  try {
-    const { data } = await axios.post(captchaVerifyUrl);
-    if (!data.success) {
-      return res.status(400).json({ error: 'CAPTCHA verification failed.' });
+  // Optional: allow bypassing captcha on localhost
+  const isLocalhost = req.hostname === 'localhost' || req.hostname === '127.0.0.1';
+  if (!isLocalhost) {
+    if (!captchaToken) {
+      return res.status(400).json({ error: 'Missing reCAPTCHA token.' });
     }
-  } catch (err) {
-    return res.status(500).json({ error: 'Error verifying CAPTCHA.' });
+
+    const captchaVerifyUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.CAPTCHA_SECRET_KEY}&response=${captchaToken}`;
+    try {
+      const { data } = await axios.post(captchaVerifyUrl);
+      if (!data.success) {
+        return res.status(400).json({ error: 'CAPTCHA verification failed.' });
+      }
+    } catch {
+      return res.status(500).json({ error: 'Error verifying CAPTCHA.' });
+    }
   }
 
   if (req.session.tokens.length >= 3) {
     return res.status(400).json({ error: 'Max 3 tokens per session.' });
-  }
-
-  const { token } = req.body;
-  if (!token) {
-    return res.status(400).json({ error: 'No Discord token provided.' });
   }
 
   if (req.session.tokens.find(t => t.token === token)) {
@@ -96,7 +110,9 @@ app.post('/api/addToken', async (req, res) => {
   return res.json({ success: true, userData });
 });
 
-// Get tokens for session
+// ----------------------
+// API: GET SESSION TOKENS
+// ----------------------
 app.get('/api/tokens', (req, res) => {
   initSessionData(req);
   const minimal = req.session.tokens.map(t => ({
@@ -110,7 +126,9 @@ app.get('/api/tokens', (req, res) => {
   res.json(minimal);
 });
 
-// Start selfbots
+// ----------------------
+// API: START MANAGER
+// ----------------------
 app.post('/api/start', async (req, res) => {
   initSessionData(req);
 
@@ -128,21 +146,32 @@ app.post('/api/start', async (req, res) => {
   }
 });
 
-// EJS template rendering
+// ----------------------
+// PAGE RENDERING
+// ----------------------
+
+// Index route
 app.get('/', (req, res) => {
   res.render('index', {
     siteKey: process.env.CAPTCHA_SITE_KEY || ''
   });
 });
 
-// Catch-all route (for EJS rendering fallback)
-app.use((req, res) => {
+// Fallback: only render index for non-API routes
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api') || req.path.startsWith('/socket.io')) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+
   res.render('index', {
     siteKey: process.env.CAPTCHA_SITE_KEY || ''
   });
 });
 
+// ----------------------
+// START SERVER
+// ----------------------
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`✅ ReboundGuardian running at http://localhost:${PORT}`);
 });
