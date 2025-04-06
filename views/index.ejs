@@ -41,21 +41,22 @@
       </p>
       <h3>Disclaimer</h3>
       <p>
-        While this tool can keep you in group channels by re-adding you, **using selfbots** may violate Discord’s Terms of Service. Use at your own risk and comply with all platform rules.
+        While this tool can keep you in group channels by re-adding you, <strong>using selfbots</strong> may violate Discord’s TOS. Use at your own risk and comply with platform rules.
       </p>
     </section>
 
     <!-- RIGHT COLUMN: Add Token, Start Manager, Console -->
     <section class="main-card">
       <p class="subtitle">
-        Add your tokens (up to 3), solve reCAPTCHA (skipped on localhost), then hit “Start Manager.” The script ensures you stay in the group even if removed!
+        Add up to 3 tokens. The input is hidden as you type, and tokens in the list only show “••••”. Also, we store them in localStorage so they persist after reload.
       </p>
 
       <!-- Add Token -->
       <div class="add-token-row">
+        <!-- 1) type='password' so the token is not visible while typing -->
         <input
           id="tokenInput"
-          type="text"
+          type="password"
           placeholder="Paste Discord token..."
           class="token-input"
         />

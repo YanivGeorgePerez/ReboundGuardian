@@ -2,10 +2,11 @@
 
 let recaptchaWidgetId;
 let addingToken = false;
+let localTokens = []; // We'll store the user's tokens in memory from localStorage
 
-// Called when the page loads
+// Fired on page load
 window.onload = function () {
-  // If not on localhost, we render the invisible reCAPTCHA
+  // Possibly skip reCAPTCHA if on localhost
   if (!isLocalhost()) {
     recaptchaWidgetId = grecaptcha.render(document.createElement('div'), {
       sitekey: window.recaptchaSiteKey,
@@ -14,7 +15,9 @@ window.onload = function () {
     });
   }
   loadTheme();    // Load theme from localStorage
-  loadTokens();   // Load existing tokens
+  loadLocalTokens(); // Load tokens from localStorage
+  drawLocalTokens();
+  loadTokensFromServer(); // Also fetch server session tokens, if needed
 };
 
 // Check if hostname is localhost
@@ -40,10 +43,7 @@ socket.on('connect', () => appendConsole('Connected to server.'));
 socket.on('disconnect', () => appendConsole('Disconnected from server.'));
 socket.on('log', (msg) => appendConsole(msg));
 
-/**
- * Append a line to the console area
- * @param {string} message
- */
+/** Print a message to the console area */
 function appendConsole(message) {
   const time = new Date().toLocaleTimeString();
   const line = document.createElement('div');
@@ -52,73 +52,86 @@ function appendConsole(message) {
   consoleLog.scrollTop = consoleLog.scrollHeight;
 }
 
-/**
- * Fetch the session's tokens from the server, then display them
- */
-async function loadTokens() {
+/** Retrieve tokens from localStorage into localTokens array */
+function loadLocalTokens() {
   try {
-    const { data } = await axios.get('/api/tokens');
-    drawTokens(data);
+    const str = localStorage.getItem('localTokens');
+    if (str) {
+      localTokens = JSON.parse(str);
+    } else {
+      localTokens = [];
+    }
   } catch (err) {
-    console.error(err);
-    appendConsole('Error loading tokens.');
+    localTokens = [];
+    console.error('Error parsing localStorage tokens.', err);
   }
 }
 
-/**
- * Redraw the tokens list
- * @param {Array} tokenArray
- */
-function drawTokens(tokenArray) {
-  tokensList.innerHTML = '';
-  tokenArray.forEach((t) => {
-    const avatarUrl = t.userData.avatar
-      ? `https://cdn.discordapp.com/avatars/${t.userData.id}/${t.userData.avatar}.png`
-      : 'https://cdn.discordapp.com/embed/avatars/0.png';
+/** Save our localTokens array to localStorage */
+function saveLocalTokens() {
+  localStorage.setItem('localTokens', JSON.stringify(localTokens));
+}
 
+/** Re-draw tokens from localTokens array, showing masked tokens only */
+function drawLocalTokens() {
+  tokensList.innerHTML = '';
+  localTokens.forEach((t) => {
+    const masked = '••••••••'; // always show 8 bullets, or partial
     const cardDiv = document.createElement('div');
     cardDiv.className = 'card';
     cardDiv.innerHTML = `
-      <img src="${avatarUrl}" alt="avatar"
-           style="width:40px; height:40px; border-radius:50%; margin-right:0.5rem;">
-      <div>
-        <div style="font-weight:600;">${t.userData.username}#${t.userData.discriminator}</div>
-        <div style="font-size:0.8rem; color: #777;">ID: ${t.userData.id}</div>
-      </div>
+      <span style="margin-right:0.5rem;">${masked}</span>
+      <span style="font-size:0.8rem; color: #777;">(Saved)</span>
     `;
     tokensList.appendChild(cardDiv);
   });
 }
 
-// Handle "Add Token" click
+/** Optionally also fetch tokens from server's session, if needed  */
+async function loadTokensFromServer() {
+  try {
+    const { data } = await axios.get('/api/tokens');
+    // The server might have a separate session list. 
+    // For demonstration, we won't merge them. We'll rely on localTokens for re-persistence.
+    // If you want to sync them, you'd do that here.
+    if (data.length) {
+      appendConsole(`Server session has ${data.length} tokens as well.`);
+    }
+  } catch (err) {
+    console.error(err);
+    appendConsole('Error loading server tokens.');
+  }
+}
+
+// "Add Token" button click
 addTokenBtn.addEventListener('click', () => {
   const val = tokenInput.value.trim();
   if (!val) {
     alert('Please enter a Discord token.');
     return;
   }
+  if (localTokens.length >= 3) {
+    alert('Max 3 tokens in local storage. Remove one or proceed with these.');
+    return;
+  }
+
   addingToken = true;
   addTokenBtn.disabled = true;
   addTokenBtn.textContent = 'Verifying...';
 
-  // If we're on localhost, skip reCAPTCHA
+  // If on localhost => skip reCAPTCHA
   if (isLocalhost()) {
-    // Just call the captcha success function directly
-    onCaptchaSuccess(null); 
+    onCaptchaSuccess(null);
   } else {
-    // Execute reCAPTCHA invisible flow
     if (typeof grecaptcha !== 'undefined' && recaptchaWidgetId) {
       grecaptcha.execute(recaptchaWidgetId);
     } else {
-      // Something's off with reCAPTCHA
       onCaptchaFail();
     }
   }
 });
 
-/**
- * Called if reCAPTCHA fails to load or user can't do it
- */
+/** If reCAPTCHA fails or not available */
 function onCaptchaFail() {
   addingToken = false;
   addTokenBtn.disabled = false;
@@ -126,45 +139,43 @@ function onCaptchaFail() {
   appendConsole('CAPTCHA error. Could not verify.');
 }
 
-/**
- * The reCAPTCHA success callback
- * @param {string|null} captchaToken
- */
+/** reCAPTCHA success => add token to localStorage & server (if needed) */
 async function onCaptchaSuccess(captchaToken) {
-  // If user canceled or something
-  if (!addingToken) {
-    return;
-  }
+  if (!addingToken) return;
 
   const tokenVal = tokenInput.value.trim();
   try {
+    // We'll store token locally first
+    localTokens.push(tokenVal);
+    saveLocalTokens();
+    drawLocalTokens();
+
+    // Also let the server verify or add the token to the server session
     const body = { token: tokenVal };
-    // Only send captchaToken if not on localhost
     if (!isLocalhost()) {
       body.captchaToken = captchaToken;
     }
-
-    // POST to add token
     const res = await axios.post('/api/addToken', body);
+
     if (res.data && res.data.success) {
-      appendConsole(`Token added: ${res.data.userData.username}#${res.data.userData.discriminator}`);
-      tokenInput.value = '';
-      await loadTokens();
+      appendConsole(`Server accepted token: ${res.data.userData.username}#${res.data.userData.discriminator}`);
     }
   } catch (err) {
-    if (err.response && err.response.data && err.response.data.error) {
+    if (err.response?.data?.error) {
       alert(err.response.data.error);
     } else {
       alert('Error adding token.');
     }
   } finally {
+    // Always reset after finishing
     addingToken = false;
     addTokenBtn.disabled = false;
     addTokenBtn.textContent = 'Add Token';
+    tokenInput.value = ''; // 2) Clear the password field
   }
 }
 
-// Handle "Start Manager" click
+/** Start Manager => server route to start the bot logic */
 startBtn.addEventListener('click', async (e) => {
   e.preventDefault();
   startBtn.disabled = true;
@@ -186,18 +197,17 @@ startBtn.addEventListener('click', async (e) => {
   }
 });
 
-/* THEME TOGGLE & PERSISTENCE */
+/** THEME TOGGLE & PERSISTENCE */
 
-// Load theme from localStorage
+// Restore theme from localStorage
 function loadTheme() {
   const saved = localStorage.getItem('savedTheme');
-  const isDark = saved === 'dark';       // if stored "dark", apply it
+  const isDark = saved === 'dark';
   document.body.classList.toggle('dark', isDark);
-  // Reflect that in the checkbox
   themeToggle.checked = isDark;
 }
 
-// Save theme to localStorage whenever changed
+// Save theme to localStorage
 themeToggle.addEventListener('change', () => {
   const dark = themeToggle.checked;
   document.body.classList.toggle('dark', dark);
