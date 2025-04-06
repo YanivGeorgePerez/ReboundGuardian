@@ -25,16 +25,18 @@ app.set('views', path.join(__dirname, 'views'));
 // ----------------------
 app.set('trust proxy', 1); // <-- required when behind a proxy
 
+app.set('trust proxy', 1);
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || 'keyboard cat',
   resave: false,
   saveUninitialized: true,
   cookie: {
-    secure: false,
-    httpOnly: true,
-    sameSite: 'none'
+    secure: true,      // real SSL from CF → your server
+    sameSite: 'none',  // okay because we have secure: true
+    httpOnly: true
   }
 });
+
 
 
 app.use(sessionMiddleware);
