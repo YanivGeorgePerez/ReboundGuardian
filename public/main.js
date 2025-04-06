@@ -11,6 +11,7 @@ const startBtn = document.getElementById('startBtn');
 const themeToggle = document.getElementById('themeToggle');
 const resetBtn = document.getElementById('resetTokensBtn');
 const botStatusIcon = document.getElementById('botStatusIcon');
+const stopBtn = document.getElementById('stopBtn');
 
 // Check localhost
 function isLocalhost() {
@@ -112,6 +113,25 @@ async function loadTokensFromServer() {
   }
 }
 
+stopBtn?.addEventListener('click', async () => {
+  stopBtn.disabled = true;
+  stopBtn.textContent = 'Stopping...';
+  try {
+    const res = await axios.post('/api/stop');
+    if (res.data?.success) {
+      appendConsole('🛑 Manager stopped.');
+      setBotStatus(false);
+    }
+  } catch (err) {
+    appendConsole('❌ Error stopping manager.');
+  } finally {
+    stopBtn.disabled = false;
+    stopBtn.textContent = 'Stop Manager';
+  }
+});
+
+
+
 // ADD TOKEN BUTTON
 addTokenBtn.addEventListener('click', () => {
   const val = tokenInput.value.trim();
@@ -197,8 +217,22 @@ themeToggle.addEventListener('change', () => {
   localStorage.setItem('savedTheme', dark ? 'dark' : 'light');
 });
 
+async function checkManagerStatus() {
+  try {
+    const res = await axios.get('/api/status');
+    if (res.data?.active) {
+      appendConsole('🟢 Manager is active.');
+      setBotStatus(true);
+    }
+  } catch {
+    appendConsole('🔴 Could not check manager status.');
+  }
+}
+
+
 // INIT
 window.onload = function () {
+  checkManagerStatus();
   loadTheme();
   loadLocalTokens();
   drawLocalTokens();

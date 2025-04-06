@@ -177,6 +177,24 @@ body {
 .start-btn:hover {
   background-color: var(--accent-hover);
 }
+.stop-btn {
+  background: #555;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  width: 100%;
+  max-width: 250px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+.stop-btn:hover {
+  background: #333;
+}
 
 /* Console */
 .console {

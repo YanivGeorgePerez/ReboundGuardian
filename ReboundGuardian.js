@@ -87,7 +87,23 @@ function startSelfbotsForSession(sessionID, tokens, io) {
   broadcastToSession(io, sessionID, `🚀 Started ${tokens.length} account(s) for session ${sessionID}`);
 }
 
+function stopSelfbotsForSession(sessionID, io) {
+  if (!sessionBotsMap[sessionID]) return;
+
+  for (const { client } of sessionBotsMap[sessionID]) {
+    try {
+      client.destroy();
+    } catch (e) {
+      console.error(`[Stop Error]`, e.message);
+    }
+  }
+
+  delete sessionBotsMap[sessionID];
+  broadcastToSession(io, sessionID, `🛑 Manager stopped for this session.`);
+}
+
 module.exports = {
   verifyToken,
-  startSelfbotsForSession
+  startSelfbotsForSession,
+  stopSelfbotsForSession
 };

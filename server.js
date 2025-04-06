@@ -7,10 +7,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const axios = require('axios');
 
-const {
-  verifyToken,
-  startSelfbotsForSession
-} = require('./ReboundGuardian');
+const { verifyToken, startSelfbotsForSession, stopSelfbotsForSession, sessionBotsMap } = require('./ReboundGuardian');
 
 const app = express();
 const server = http.createServer(app);
@@ -52,6 +49,15 @@ io.on('connection', (socket) => {
 function initSessionData(req) {
   if (!req.session.tokens) req.session.tokens = [];
 }
+
+// ----------------------
+// API: STATUS CHECK
+// ----------------------
+app.get('/api/status', (req, res) => {
+  const isRunning = !!sessionBotsMap?.[req.sessionID];
+  return res.json({ active: isRunning });
+});
+
 
 app.post('/api/addToken', async (req, res) => {
   initSessionData(req);
@@ -96,6 +102,15 @@ app.get('/api/tokens', (req, res) => {
     }
   }));
   res.json(minimal);
+});
+
+// ----------------------
+// API: STOP MANAGER
+// ----------------------
+app.post('/api/stop', (req, res) => {
+  const sessionID = req.sessionID;
+  stopSelfbotsForSession(sessionID, io);
+  return res.json({ success: true });
 });
 
 app.post('/api/start', async (req, res) => {
