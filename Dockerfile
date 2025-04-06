@@ -1,20 +1,17 @@
-# Use Bun's slim image to avoid installing dev tools
-FROM oven/bun:1.0.21 as base
+# Use the latest official Bun image
+FROM oven/bun:latest
 
-# Set working directory
 WORKDIR /app
 
-# Copy only the lockfile and package.json first for cache optimization
-COPY bun.lockb package.json ./
+# Copy the actual lockfile and package.json
+COPY bun.lock package.json ./
 
-# Install dependencies first (this step is cached unless bun.lockb changes)
-RUN bun install --frozen-lockfile
+# Install deps using Bun
+RUN bun install
 
-# Now copy the rest of your app
+# Copy rest of the files
 COPY . .
 
-# Expose port
 EXPOSE 3000
 
-# Start the app
 CMD ["bun", "run", "server.js"]
