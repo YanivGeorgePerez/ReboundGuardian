@@ -23,17 +23,19 @@ app.set('views', path.join(__dirname, 'views'));
 // ----------------------
 // SESSION CONFIGURATION
 // ----------------------
+app.set('trust proxy', 1); // <-- required when behind a proxy
+
 const sessionMiddleware = session({
-    secret: process.env.SESSION_SECRET || 'keyboard cat',
-    resave: false,
-    saveUninitialized: true,
-    cookie: {
-      secure: false,           // never set to true unless you're using HTTPS
-      httpOnly: true,
-      sameSite: 'lax'
-    }
-  });
-  
+  secret: process.env.SESSION_SECRET || 'keyboard cat',
+  resave: false,
+  saveUninitialized: true,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    sameSite: 'lax'
+  }
+});
+
 
 app.use(sessionMiddleware);
 app.use(bodyParser.json());
