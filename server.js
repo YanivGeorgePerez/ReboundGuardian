@@ -159,11 +159,21 @@ app.get('/', (req, res) => {
 });
 
 // Fallback: only render index for non-API routes
-app.use((req, res) => {
+// Only render index if it's a regular page request
+app.use((req, res, next) => {
+    const url = req.originalUrl;
+  
+    // Skip rendering for known backend/API/socket routes
+    if (url.startsWith('/api') || url.startsWith('/socket.io')) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+  
+    // Otherwise, render frontend
     res.render('index', {
       siteKey: process.env.CAPTCHA_SITE_KEY || ''
     });
   });
+  
   
 
 // ----------------------
