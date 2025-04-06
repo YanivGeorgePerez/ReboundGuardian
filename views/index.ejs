@@ -4,8 +4,30 @@
   <meta charset="UTF-8" />
   <title>ReboundGuardian Manager</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Embed Meta for Discord -->
+  <meta property="og:title" content="ReboundGuardian - Selfbot Anti-Kick">
+  <meta property="og:description" content="Stay unkickable in Discord group chats. Run stealth selfbots that auto-rejoin instantly.">
+  <meta property="og:image" content="https://reboundguardian.com/logo.png">
+  <meta property="og:url" content="https://reboundguardian.com">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <!-- Instant dark mode on load -->
+  <script>
+    (function() {
+      const saved = localStorage.getItem('savedTheme');
+      if (saved === 'dark') {
+        document.documentElement.classList.add('dark');
+        document.body.className = 'dark';
+      }
+    })();
+  </script>
+
+  <!-- Fonts + CSS -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css" />
+
+  <!-- Libraries -->
   <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://www.google.com/recaptcha/api.js" async defer></script>
@@ -25,7 +47,7 @@
   </nav>
 
   <main class="grid-container">
-    <!-- LEFT SIDE -->
+    <!-- LEFT INFO CARD -->
     <section class="info-card">
       <h2>How it Works</h2>
       <p>This selfbot listens for <code>channelRecipientRemove</code> events. If you get kicked, it re-adds you instantly using your own token(s), making you effectively unkickable in group chats.</p>
@@ -33,35 +55,33 @@
       <p>This tool uses Discord selfbots, which are against the Discord Terms of Service. Use at your own risk and only on accounts you're willing to lose.</p>
     </section>
 
-    <!-- RIGHT SIDE -->
+    <!-- RIGHT FUNCTION CARD -->
     <section class="main-card">
-      <p class="subtitle">Add up to 3 tokens. They are stored locally in your browser and hidden by default.</p>
+      <p class="subtitle">Add up to 3 tokens. Stored locally & hidden from view.</p>
 
       <div class="add-token-row">
         <input id="tokenInput" type="password" placeholder="Paste Discord token..." class="token-input" />
         <button id="addTokenBtn" class="add-btn">Add Token</button>
       </div>
 
-      <!-- CAPTCHA -->
+      <!-- CAPTCHA V2 -->
       <div style="margin-top: 1rem;" class="g-recaptcha"
            data-sitekey="<%= siteKey %>"
            data-callback="onCaptchaSuccess"
            data-theme="light">
       </div>
 
+      <!-- Button Group -->
       <div class="action-buttons">
         <form id="startForm">
           <button id="startBtn" class="button start">Start Manager</button>
         </form>
-        
         <form id="stopForm">
           <button id="stopBtn" class="button stop">Stop Manager</button>
         </form>
-        
         <button id="resetTokensBtn" class="button reset">Reset Saved Accounts</button>
       </div>
-      
-      
+
       <!-- Console -->
       <div id="consoleLog" class="console"></div>
 
@@ -88,6 +108,7 @@
     </section>
   </main>
 
+  <!-- Site key exposed to JS -->
   <script>
     window.recaptchaSiteKey = "<%= siteKey %>";
   </script>

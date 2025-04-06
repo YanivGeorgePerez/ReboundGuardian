@@ -1,4 +1,3 @@
-// ReboundGuardian.js
 const { Client } = require('discord.js-selfbot-v13');
 const { XMLHttpRequest } = require('xmlhttprequest');
 const axios = require('axios');

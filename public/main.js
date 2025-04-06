@@ -8,10 +8,13 @@ const addTokenBtn = document.getElementById('addTokenBtn');
 const tokensList = document.getElementById('tokensList');
 const consoleLog = document.getElementById('consoleLog');
 const startBtn = document.getElementById('startBtn');
+const stopBtn = document.getElementById('stopBtn');
 const themeToggle = document.getElementById('themeToggle');
 const resetBtn = document.getElementById('resetTokensBtn');
 const botStatusIcon = document.getElementById('botStatusIcon');
-const stopBtn = document.getElementById('stopBtn');
+
+// Load theme early (prevent flash)
+loadTheme();
 
 // Check localhost
 function isLocalhost() {
@@ -23,19 +26,19 @@ function isLocalhost() {
 
 const socket = io();
 
-// Socket events
-socket.on('connect', () => appendConsole('Connected to server.'));
+// SOCKET EVENTS
+socket.on('connect', () => appendConsole('✅ Connected to server.'));
 socket.on('disconnect', () => {
-  appendConsole('Disconnected from server.');
+  appendConsole('❌ Disconnected.');
   setBotStatus(false);
 });
 socket.on('log', (msg) => {
   appendConsole(msg);
   if (/started|active/i.test(msg)) setBotStatus(true);
-  if (/disconnected/i.test(msg)) setBotStatus(false);
+  if (/disconnected|stopped/i.test(msg)) setBotStatus(false);
 });
 
-// Console logger
+// LOG TO CONSOLE BOX
 function appendConsole(message) {
   const time = new Date().toLocaleTimeString();
   const line = document.createElement('div');
@@ -44,7 +47,7 @@ function appendConsole(message) {
   consoleLog.scrollTop = consoleLog.scrollHeight;
 }
 
-// BOT STATUS
+// BOT STATUS ICON
 function setBotStatus(active) {
   botRunning = active;
   if (botStatusIcon) {
@@ -53,7 +56,7 @@ function setBotStatus(active) {
   }
 }
 
-// Load saved tokens
+// TOKENS
 function loadLocalTokens() {
   try {
     const str = localStorage.getItem('localTokens');
@@ -63,12 +66,10 @@ function loadLocalTokens() {
   }
 }
 
-// Save tokens
 function saveLocalTokens() {
   localStorage.setItem('localTokens', JSON.stringify(localTokens));
 }
 
-// Draw token list
 function drawLocalTokens() {
   tokensList.innerHTML = '';
   localTokens.forEach(() => {
@@ -82,7 +83,7 @@ function drawLocalTokens() {
   });
 }
 
-// Reset saved tokens
+// RESET BUTTON
 resetBtn?.addEventListener('click', async () => {
   localTokens = [];
   saveLocalTokens();
@@ -90,97 +91,25 @@ resetBtn?.addEventListener('click', async () => {
 
   try {
     await axios.post('/api/resetTokens');
-    appendConsole('🧹 Tokens cleared from localStorage and server session.');
+    appendConsole('🧹 Tokens cleared locally and from server.');
   } catch {
-    appendConsole('⚠️ Could not reset server session.');
+    appendConsole('⚠️ Server token reset failed.');
   }
 
-  // Reset CAPTCHA if not on localhost
   if (!isLocalhost() && typeof grecaptcha !== 'undefined') {
     grecaptcha.reset();
   }
 });
 
-// Load session tokens from backend
+// LOAD FROM SERVER
 async function loadTokensFromServer() {
   try {
     const { data } = await axios.get('/api/tokens');
     if (data.length) {
-      appendConsole(`Session has ${data.length} token(s).`);
+      appendConsole(`💾 Server has ${data.length} token(s).`);
     }
   } catch {
-    appendConsole('Error loading session tokens.');
-  }
-}
-
-stopBtn?.addEventListener('click', async () => {
-  stopBtn.disabled = true;
-  stopBtn.textContent = 'Stopping...';
-  try {
-    const res = await axios.post('/api/stop');
-    if (res.data?.success) {
-      appendConsole('🛑 Manager stopped.');
-      setBotStatus(false);
-    }
-  } catch (err) {
-    appendConsole('❌ Error stopping manager.');
-  } finally {
-    stopBtn.disabled = false;
-    stopBtn.textContent = 'Stop Manager';
-  }
-});
-
-
-
-// ADD TOKEN BUTTON
-addTokenBtn.addEventListener('click', () => {
-  const val = tokenInput.value.trim();
-  if (!val) return alert('Enter a Discord token.');
-  if (localTokens.length >= 3) return alert('You can only add 3 tokens.');
-
-  addingToken = true;
-  addTokenBtn.disabled = true;
-  addTokenBtn.textContent = 'Verifying...';
-
-  if (isLocalhost()) {
-    onCaptchaSuccess(null);
-  } else {
-    const token = grecaptcha.getResponse();
-    if (!token) {
-      alert("Please solve the CAPTCHA first.");
-      addTokenBtn.disabled = false;
-      addTokenBtn.textContent = 'Add Token';
-      return;
-    }
-    onCaptchaSuccess(token);
-  }
-});
-
-// HANDLE CAPTCHA SUCCESS
-async function onCaptchaSuccess(captchaToken) {
-  if (!addingToken) return;
-
-  const tokenVal = tokenInput.value.trim();
-  try {
-    localTokens.push(tokenVal);
-    saveLocalTokens();
-    drawLocalTokens();
-
-    const body = { token: tokenVal };
-    if (!isLocalhost()) body.captchaToken = captchaToken;
-
-    const res = await axios.post('/api/addToken', body);
-    if (res.data?.success) {
-      appendConsole(`✅ Token added: ${res.data.userData.username}#${res.data.userData.discriminator}`);
-    }
-  } catch (err) {
-    alert(err.response?.data?.error || 'Error adding token.');
-  } finally {
-    addingToken = false;
-    addTokenBtn.disabled = false;
-    addTokenBtn.textContent = 'Add Token';
-    tokenInput.value = '';
-    if (!isLocalhost()) grecaptcha.reset(); // 💡 reset checkbox
+    appendConsole('⚠️ Could not fetch server tokens.');
   }
 }
 
@@ -196,14 +125,97 @@ startBtn.addEventListener('click', async (e) => {
       setBotStatus(true);
     }
   } catch (err) {
-    alert(err.response?.data?.error || 'Failed to start manager.');
+    alert(err.response?.data?.error || 'Start error.');
   } finally {
     startBtn.disabled = false;
     startBtn.textContent = 'Start Manager';
   }
 });
 
-// THEME STUFF
+// STOP MANAGER
+stopBtn?.addEventListener('click', async () => {
+  stopBtn.disabled = true;
+  stopBtn.textContent = 'Stopping...';
+  try {
+    const res = await axios.post('/api/stop');
+    if (res.data?.success) {
+      appendConsole('🛑 Manager stopped.');
+      setBotStatus(false);
+    }
+  } catch {
+    appendConsole('❌ Error stopping manager.');
+  } finally {
+    stopBtn.disabled = false;
+    stopBtn.textContent = 'Stop Manager';
+  }
+});
+
+// ADD TOKEN
+addTokenBtn.addEventListener('click', () => {
+  const val = tokenInput.value.trim();
+  if (!val) return alert('Enter a Discord token.');
+  if (localTokens.length >= 3) return alert('You can only add 3 tokens.');
+
+  addingToken = true;
+  addTokenBtn.disabled = true;
+  addTokenBtn.textContent = 'Verifying...';
+
+  if (isLocalhost()) {
+    onCaptchaSuccess(null);
+  } else {
+    const token = grecaptcha.getResponse();
+    if (!token) {
+      alert("Please solve the CAPTCHA.");
+      addTokenBtn.disabled = false;
+      addTokenBtn.textContent = 'Add Token';
+      return;
+    }
+    onCaptchaSuccess(token);
+  }
+});
+
+// CAPTCHA CALLBACK
+async function onCaptchaSuccess(captchaToken) {
+  if (!addingToken) return;
+
+  const tokenVal = tokenInput.value.trim();
+  try {
+    localTokens.push(tokenVal);
+    saveLocalTokens();
+    drawLocalTokens();
+
+    const body = { token: tokenVal };
+    if (!isLocalhost()) body.captchaToken = captchaToken;
+
+    const res = await axios.post('/api/addToken', body);
+    if (res.data?.success) {
+      appendConsole(`✅ Token: ${res.data.userData.username}#${res.data.userData.discriminator}`);
+    }
+  } catch (err) {
+    alert(err.response?.data?.error || 'Add error.');
+  } finally {
+    addingToken = false;
+    addTokenBtn.disabled = false;
+    addTokenBtn.textContent = 'Add Token';
+    tokenInput.value = '';
+    if (!isLocalhost()) grecaptcha.reset();
+  }
+}
+
+// CHECK IF BOT RUNNING (on refresh)
+async function checkManagerStatus() {
+  try {
+    const res = await axios.get('/api/status');
+    if (res.data?.active) {
+      appendConsole('🟢 Manager is active.');
+      setBotStatus(true);
+    }
+  } catch {
+    appendConsole('🔴 Could not check status.');
+  }
+}
+
+// THEME FUNCTIONS
 function loadTheme() {
   const saved = localStorage.getItem('savedTheme');
   const isDark = saved === 'dark';
@@ -217,23 +229,9 @@ themeToggle.addEventListener('change', () => {
   localStorage.setItem('savedTheme', dark ? 'dark' : 'light');
 });
 
-async function checkManagerStatus() {
-  try {
-    const res = await axios.get('/api/status');
-    if (res.data?.active) {
-      appendConsole('🟢 Manager is active.');
-      setBotStatus(true);
-    }
-  } catch {
-    appendConsole('🔴 Could not check manager status.');
-  }
-}
-
-
 // INIT
 window.onload = function () {
   checkManagerStatus();
-  loadTheme();
   loadLocalTokens();
   drawLocalTokens();
   loadTokensFromServer();
