@@ -5,7 +5,7 @@ FROM oven/bun:latest
 WORKDIR /app
 
 # Only copy files that are needed to install deps first (for caching)
-COPY bun.lockb bun.lockb
+COPY bun.lock bun.lock
 COPY package.json package.json
 
 # Install dependencies (cached if package.json and lock didn't change)
