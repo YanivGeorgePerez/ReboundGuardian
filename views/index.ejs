@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Unkickable Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/styles.css" />
+
+  <!-- Axios, Socket.IO, reCAPTCHA -->
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://www.google.com/recaptcha/api.js?render=explicit" async defer></script>
+</head>
+<body class="light">
+  <!-- TOP NAV -->
+  <nav class="topnav">
+    <div class="nav-left">
+      <h1 class="nav-title">Unkickable Manager</h1>
+    </div>
+    <div class="nav-right">
+      <!-- THEME TOGGLE SLIDER -->
+      <label class="theme-switch-wrapper">
+        <input type="checkbox" id="themeToggle" />
+        <span class="theme-slider"></span>
+      </label>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTAINER: Two-column on desktop -->
+  <main class="grid-container">
+    <!-- LEFT COLUMN: How it Works -->
+    <section class="info-card">
+      <h2>How it Works</h2>
+      <p>
+        This selfbot script uses Discord’s <code>channelRecipientRemove</code> event to detect when you’re removed (kicked) from a group channel. As soon as it happens, the bot instantly re-adds you, effectively making you “unkickable.”
+      </p>
+      <h3>Disclaimer</h3>
+      <p>
+        While this tool can keep you in group channels by re-adding you, **using selfbots** may violate Discord’s Terms of Service. Use at your own risk and comply with all platform rules.
+      </p>
+    </section>
+
+    <!-- RIGHT COLUMN: Add Token, Start Manager, Console -->
+    <section class="main-card">
+      <p class="subtitle">
+        Add your tokens (up to 3), solve reCAPTCHA (skipped on localhost), then hit “Start Manager.” The script ensures you stay in the group even if removed!
+      </p>
+
+      <!-- Add Token -->
+      <div class="add-token-row">
+        <input
+          id="tokenInput"
+          type="text"
+          placeholder="Paste Discord token..."
+          class="token-input"
+        />
+        <button id="addTokenBtn" class="add-btn">Add Token</button>
+      </div>
+
+      <!-- Tokens List -->
+      <div id="tokensList" class="token-list"></div>
+
+      <!-- Start Manager -->
+      <form id="startForm" class="start-form">
+        <button id="startBtn" class="start-btn">Start Manager</button>
+      </form>
+
+      <!-- Console -->
+      <div id="consoleLog" class="console"></div>
+
+      <!-- Footer with GitHub -->
+      <footer class="footer">
+        <a href="https://github.com/YanivGeorgePerez" target="_blank" class="footer-link">
+          <svg class="gh-icon" viewBox="0 0 16 16">
+            <path fill="currentColor" d="M8 .198a8 8 0 0 0-2.53 15.588c.4.074.547-.174.547-.386
+              0-.19-.007-.693-.01-1.36-2.01.436-2.434-.966-2.434-.966-.364-.924
+              -.89-1.17-.89-1.17-.727-.497.055-.486.055-.486.804.057
+              1.227.827 1.227.827.715 1.227 1.873.872 2.33.667.072-.518.28
+              -.873.51-1.074-1.6-.182-3.285-.8-3.285-3.552 0-.785.28
+              -1.428.74-1.932-.074-.182-.32-.91.07-1.897 0 0 .6-.192
+              1.97.73.57-.158 1.18-.237 1.79-.24.61.003
+              1.22.082 1.79.24 1.37-.922 1.97-.73 1.97-.73.39.986
+              .144 1.714.07 1.897.46.504.74 1.147.74 1.932 0 2.76
+              -1.69 3.366-3.3 3.543.29.25.54.73.54 1.48 0 1.07
+              -.01 1.93-.01 2.19 0 .214.14.464.55.385A8.006 8.006 0 0 0
+              8 .198z"/>
+          </svg>
+          <span>GitHub</span>
+        </a>
+      </footer>
+    </section>
+  </main>
+
+  <!-- reCAPTCHA site key from server -->
+  <script>
+    window.recaptchaSiteKey = "<%= siteKey %>";
+  </script>
+  <script src="/main.js"></script>
+</body>
+</html>
