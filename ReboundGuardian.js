@@ -1,17 +1,17 @@
 // ReboundGuardian.js
 const { Client } = require('discord.js-selfbot-v13');
-const XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
+const { XMLHttpRequest } = require('xmlhttprequest');
 const axios = require('axios');
 
-// Keep track of all sessions => tokens => clients
+// Session ID => [{ client, token }]
 const sessionBotsMap = {};
 
-/** Sends a message to all sockets in this session */
+/** Emit log to all sockets in a session */
 function broadcastToSession(io, sessionID, message) {
   io.to(sessionID).emit('log', message);
 }
 
-/** Verifies a Discord token via /users/@me */
+/** Verify Discord token */
 async function verifyToken(token) {
   try {
     const res = await axios.get('https://discord.com/api/v9/users/@me', {
@@ -23,87 +23,83 @@ async function verifyToken(token) {
   }
 }
 
-/** Re-adds a user to a group DM via API */
+/** Re-add user to group chat */
 function addMemberToChannel(memberId, channelId, token) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open('PUT', `https://discord.com/api/v9/channels/${channelId}/recipients/${memberId}`);
     xhr.setRequestHeader('Authorization', token);
-    xhr.setRequestHeader('User-Agent', 'Mozilla/5.0 (compatible; ManagerClient)');
-    xhr.onload = () => {
-      if (xhr.status === 204) resolve();
-      else reject(new Error(`Add user failed. Status: ${xhr.status}`));
-    };
+    xhr.setRequestHeader('User-Agent', 'Mozilla/5.0');
+    xhr.onload = () => xhr.status === 204 ? resolve() : reject(`❌ Failed: ${xhr.status}`);
+    xhr.onerror = () => reject('❌ Network error');
     xhr.send();
   }).catch(err => {
-    console.error('Error addMemberToChannel:', err.message);
+    console.error(`[AddUser Error] ${err}`);
   });
 }
 
-/** Starts selfbots tied to a session */
+/** Start selfbots for a session */
 function startSelfbotsForSession(sessionID, tokens, io) {
   if (sessionBotsMap[sessionID]) {
-    broadcastToSession(io, sessionID, '[System] Manager already running for this session.');
+    broadcastToSession(io, sessionID, '[⚠️] Already running.');
     return;
   }
 
-  sessionBotsMap[sessionID] = [];
+  const clients = [];
+  const accountIds = () => clients.map(c => c.client.user.id);
 
-  function getAccountIds() {
-    return sessionBotsMap[sessionID].map(obj => obj.client.user.id);
-  }
-
-  for (const { token, userData } of tokens) {
+  tokens.forEach(({ token, userData }) => {
     const client = new Client({ checkUpdate: false });
 
     client.on('ready', () => {
-      broadcastToSession(io, sessionID, `✅ Account active: ${userData.username}#${userData.discriminator}`);
+      broadcastToSession(io, sessionID, `✅ ${userData.username}#${userData.discriminator} ready`);
     });
 
     client.on('channelRecipientRemove', async (channel, member) => {
-      if (!member || !member.id) return;
+      if (!member?.id || !accountIds().includes(member.id)) return;
 
-      // If removed member is one of ours, re-add
-      if (getAccountIds().includes(member.id)) {
-        const tag = `${member.username || 'Unknown'}#${member.discriminator || '0000'}`;
-        broadcastToSession(io, sessionID, `ℹ️ ${tag} removed from channel ${channel.id}, re-adding...`);
+      const tag = `${member.username || 'Unknown'}#${member.discriminator || '0000'}`;
+      broadcastToSession(io, sessionID, `ℹ️ ${tag} removed from ${channel.id}, re-adding...`);
 
-        const startTime = Date.now();
-        await addMemberToChannel(member.id, channel.id, token);
-        const endTime = Date.now();
+      const t0 = performance.now();
+      await addMemberToChannel(member.id, channel.id, token);
+      const t1 = performance.now();
 
-        broadcastToSession(io, sessionID, `🔄 Re-added in ${endTime - startTime}ms.`);
-      }
+      broadcastToSession(io, sessionID, `🔄 Re-added in ${Math.round(t1 - t0)}ms`);
     });
 
-    client.on('disconnect', (evt) => {
+    client.on('disconnect', evt => {
       broadcastToSession(io, sessionID, `❌ Disconnected: ${evt?.reason || 'Unknown'}`);
     });
 
     client.login(token);
-    sessionBotsMap[sessionID].push({ client, token });
-  }
+    clients.push({ client, token });
+  });
 
-  broadcastToSession(io, sessionID, `🚀 Started ${tokens.length} account(s) for session ${sessionID}`);
+  sessionBotsMap[sessionID] = clients;
+  broadcastToSession(io, sessionID, `🚀 Started ${clients.length} selfbot(s)`);
 }
 
+/** Stop and clean up session selfbots */
 function stopSelfbotsForSession(sessionID, io) {
-  if (!sessionBotsMap[sessionID]) return;
+  const clients = sessionBotsMap[sessionID];
+  if (!clients) return;
 
-  for (const { client } of sessionBotsMap[sessionID]) {
+  clients.forEach(({ client }) => {
     try {
       client.destroy();
-    } catch (e) {
-      console.error(`[Stop Error]`, e.message);
+    } catch (err) {
+      console.error(`[Stop Error] ${err.message}`);
     }
-  }
+  });
 
   delete sessionBotsMap[sessionID];
-  broadcastToSession(io, sessionID, `🛑 Manager stopped for this session.`);
+  broadcastToSession(io, sessionID, `🛑 Manager stopped`);
 }
 
 module.exports = {
   verifyToken,
   startSelfbotsForSession,
-  stopSelfbotsForSession
+  stopSelfbotsForSession,
+  sessionBotsMap
 };
