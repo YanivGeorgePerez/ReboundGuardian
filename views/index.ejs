@@ -49,23 +49,18 @@
            data-theme="light">
       </div>
 
-      <div class="reset-container">
-        <button id="resetTokensBtn" class="reset-btn">
-          🧹 Reset Saved Accounts
-        </button>
+      <div class="action-buttons">
+        <form id="startForm">
+          <button id="startBtn" class="button start">Start Manager</button>
+        </form>
+        
+        <form id="stopForm">
+          <button id="stopBtn" class="button stop">Stop Manager</button>
+        </form>
+        
+        <button id="resetTokensBtn" class="button reset">Reset Saved Accounts</button>
       </div>
       
-
-      <!-- Tokens -->
-      <div id="tokensList" class="token-list"></div>
-
-      <!-- Start -->
-      <form id="startForm" class="start-form">
-        <button id="startBtn" class="start-btn">Start Manager</button>
-      </form>
-      <form id="stopForm" class="stop-form">
-        <button id="stopBtn" class="stop-btn">Stop Manager</button>
-      </form>
       
       <!-- Console -->
       <div id="consoleLog" class="console"></div>

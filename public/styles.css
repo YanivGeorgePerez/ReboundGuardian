@@ -161,41 +161,6 @@ body {
   margin-bottom: 0.75rem;
 }
 
-/* Start manager */
-.start-form {
-  margin-bottom: 1rem;
-}
-.start-btn {
-  padding: 0.75rem 1rem;
-  border: none;
-  border-radius: 0.5rem;
-  background-color: var(--accent-color);
-  color: #fff;
-  font-weight: 600;
-  cursor: pointer;
-}
-.start-btn:hover {
-  background-color: var(--accent-hover);
-}
-.stop-btn {
-  background: #555;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  font-weight: bold;
-  border-radius: 8px;
-  cursor: pointer;
-  margin-top: 0.5rem;
-  width: 100%;
-  max-width: 250px;
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-}
-.stop-btn:hover {
-  background: #333;
-}
-
 /* Console */
 .console {
   background-color: var(--bg-color);
@@ -205,33 +170,59 @@ body {
   height: 8rem;
   overflow-y: auto;
   font-size: 0.9rem;
-}
-.reset-container {
   margin-top: 1rem;
 }
 
-.reset-btn {
-  background: #ff5252;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
+/* Action buttons container */
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1rem auto;
+  max-width: 300px;
+  width: 100%;
+}
+
+/* Unified button style */
+.button {
+  padding: 0.75rem 1rem;
   font-weight: 600;
-  border-radius: 8px;
+  border: none;
+  border-radius: 0.5rem;
   cursor: pointer;
   transition: background 0.2s ease-in-out;
   width: 100%;
-  max-width: 250px;
-  display: block;
-  margin: 0 auto;
+  text-align: center;
 }
 
-.reset-btn:hover {
-  background: #e53935;
+/* Specific button styles */
+.button.start {
+  background-color: var(--accent-color);
+  color: white;
+}
+.button.start:hover {
+  background-color: var(--accent-hover);
+}
+
+.button.stop {
+  background-color: #555;
+  color: white;
+}
+.button.stop:hover {
+  background-color: #333;
+}
+
+.button.reset {
+  background-color: #ff5252;
+  color: white;
+}
+.button.reset:hover {
+  background-color: #e53935;
 }
 
 /* Footer */
 .footer {
-  margin-top: 1rem;
+  margin-top: 2rem;
   text-align: center;
 }
 .footer-link {
