@@ -82,11 +82,22 @@ function drawLocalTokens() {
 }
 
 // Reset saved tokens
-resetBtn?.addEventListener('click', () => {
+resetBtn?.addEventListener('click', async () => {
   localTokens = [];
   saveLocalTokens();
   drawLocalTokens();
-  appendConsole('🔁 Cleared saved accounts.');
+
+  try {
+    await axios.post('/api/resetTokens');
+    appendConsole('🧹 Tokens cleared from localStorage and server session.');
+  } catch {
+    appendConsole('⚠️ Could not reset server session.');
+  }
+
+  // Reset CAPTCHA if not on localhost
+  if (!isLocalhost() && typeof grecaptcha !== 'undefined') {
+    grecaptcha.reset();
+  }
 });
 
 // Load session tokens from backend

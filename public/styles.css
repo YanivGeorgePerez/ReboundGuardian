@@ -188,6 +188,28 @@ body {
   overflow-y: auto;
   font-size: 0.9rem;
 }
+.reset-container {
+  margin-top: 1rem;
+}
+
+.reset-btn {
+  background: #ff5252;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease-in-out;
+  width: 100%;
+  max-width: 250px;
+  display: block;
+  margin: 0 auto;
+}
+
+.reset-btn:hover {
+  background: #e53935;
+}
 
 /* Footer */
 .footer {
