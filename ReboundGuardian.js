@@ -6,11 +6,12 @@ const axios = require('axios');
 // Keep track of all sessions => tokens => clients
 const sessionBotsMap = {};
 
+/** Sends a message to all sockets in this session */
 function broadcastToSession(io, sessionID, message) {
   io.to(sessionID).emit('log', message);
 }
 
-// Verify token with Discord
+/** Verifies a Discord token via /users/@me */
 async function verifyToken(token) {
   try {
     const res = await axios.get('https://discord.com/api/v9/users/@me', {
@@ -22,6 +23,7 @@ async function verifyToken(token) {
   }
 }
 
+/** Re-adds a user to a group DM via API */
 function addMemberToChannel(memberId, channelId, token) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -38,6 +40,7 @@ function addMemberToChannel(memberId, channelId, token) {
   });
 }
 
+/** Starts selfbots tied to a session */
 function startSelfbotsForSession(sessionID, tokens, io) {
   if (sessionBotsMap[sessionID]) {
     broadcastToSession(io, sessionID, '[System] Manager already running for this session.');
@@ -52,18 +55,23 @@ function startSelfbotsForSession(sessionID, tokens, io) {
 
   for (const { token, userData } of tokens) {
     const client = new Client({ checkUpdate: false });
-    
+
     client.on('ready', () => {
       broadcastToSession(io, sessionID, `✅ Account active: ${userData.username}#${userData.discriminator}`);
     });
 
     client.on('channelRecipientRemove', async (channel, member) => {
-      // If the removed member is in our session's tokens, re-add them
+      if (!member || !member.id) return;
+
+      // If removed member is one of ours, re-add
       if (getAccountIds().includes(member.id)) {
-        broadcastToSession(io, sessionID, `ℹ️ ${member.user.username}#${member.user.discriminator} removed from channel ${channel.id}, re-adding...`);
+        const tag = `${member.username || 'Unknown'}#${member.discriminator || '0000'}`;
+        broadcastToSession(io, sessionID, `ℹ️ ${tag} removed from channel ${channel.id}, re-adding...`);
+
         const startTime = Date.now();
         await addMemberToChannel(member.id, channel.id, token);
         const endTime = Date.now();
+
         broadcastToSession(io, sessionID, `🔄 Re-added in ${endTime - startTime}ms.`);
       }
     });
