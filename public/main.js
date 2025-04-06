@@ -145,16 +145,15 @@ async function onCaptchaSuccess(captchaToken) {
 
   const tokenVal = tokenInput.value.trim();
   try {
-    // We'll store token locally first
     localTokens.push(tokenVal);
     saveLocalTokens();
     drawLocalTokens();
 
-    // Also let the server verify or add the token to the server session
     const body = { token: tokenVal };
     if (!isLocalhost()) {
       body.captchaToken = captchaToken;
     }
+
     const res = await axios.post('/api/addToken', body);
 
     if (res.data && res.data.success) {
@@ -167,13 +166,18 @@ async function onCaptchaSuccess(captchaToken) {
       alert('Error adding token.');
     }
   } finally {
-    // Always reset after finishing
     addingToken = false;
     addTokenBtn.disabled = false;
     addTokenBtn.textContent = 'Add Token';
-    tokenInput.value = ''; // 2) Clear the password field
+    tokenInput.value = '';
+
+    // ✅ RESET CAPTCHA
+    if (typeof grecaptcha !== 'undefined') {
+      grecaptcha.reset();
+    }
   }
 }
+
 
 /** Start Manager => server route to start the bot logic */
 startBtn.addEventListener('click', async (e) => {
