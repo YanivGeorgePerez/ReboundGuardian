@@ -2,72 +2,62 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Unkickable Manager</title>
+  <title>ReboundGuardian Manager</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-
-  <!-- Custom CSS -->
   <link rel="stylesheet" href="/styles.css" />
-
-  <!-- Axios, Socket.IO, reCAPTCHA v2 checkbox -->
   <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </head>
 <body class="light">
-  <!-- TOP NAV -->
   <nav class="topnav">
     <div class="nav-left">
-      <h1 class="nav-title">ReboundGuardian Manager</h1>
+      <h1 class="nav-title">ReboundGuardian</h1>
     </div>
-    <div class="nav-right">
-      <!-- THEME TOGGLE SLIDER -->
+    <div class="nav-right" style="display: flex; align-items: center; gap: 1rem;">
       <label class="theme-switch-wrapper">
         <input type="checkbox" id="themeToggle" />
         <span class="theme-slider"></span>
       </label>
+      <div id="botStatusIcon" style="width:12px;height:12px;border-radius:50%;background:#f44336;" title="Bot is offline"></div>
     </div>
   </nav>
 
-  <!-- MAIN CONTAINER: Two-column on desktop -->
   <main class="grid-container">
-    <!-- LEFT COLUMN: How it Works -->
+    <!-- LEFT SIDE -->
     <section class="info-card">
       <h2>How it Works</h2>
-      <p>
-        This selfbot script uses Discord’s <code>channelRecipientRemove</code> event to detect when you’re removed (kicked) from a group channel. As soon as it happens, the bot instantly re-adds you, effectively making you “unkickable.”
-      </p>
+      <p>This selfbot listens for <code>channelRecipientRemove</code> events. If you get kicked, it re-adds you instantly using your own token(s), making you effectively unkickable in group chats.</p>
       <h3>Disclaimer</h3>
-      <p>
-        While this tool can keep you in group channels by re-adding you, <strong>using selfbots</strong> may violate Discord’s TOS. Use at your own risk and comply with platform rules.
-      </p>
+      <p>This tool uses Discord selfbots, which are against the Discord Terms of Service. Use at your own risk and only on accounts you're willing to lose.</p>
     </section>
 
-    <!-- RIGHT COLUMN: Add Token, Start Manager, Console -->
+    <!-- RIGHT SIDE -->
     <section class="main-card">
-      <p class="subtitle">
-        Add up to 3 tokens. The input is hidden as you type, and tokens in the list only show “••••”. Also, we store them in localStorage so they persist after reload.
-      </p>
+      <p class="subtitle">Add up to 3 tokens. They are stored locally in your browser and hidden by default.</p>
 
-      <!-- Add Token -->
       <div class="add-token-row">
         <input id="tokenInput" type="password" placeholder="Paste Discord token..." class="token-input" />
         <button id="addTokenBtn" class="add-btn">Add Token</button>
       </div>
 
-      <!-- reCAPTCHA checkbox -->
+      <!-- CAPTCHA -->
       <div style="margin-top: 1rem;" class="g-recaptcha"
            data-sitekey="<%= siteKey %>"
            data-callback="onCaptchaSuccess"
            data-theme="light">
       </div>
 
-      <!-- Tokens List -->
+      <!-- Reset saved tokens -->
+      <div style="margin-top: 0.5rem;">
+        <button id="resetTokensBtn" class="reset-btn">Reset Saved Accounts</button>
+      </div>
+
+      <!-- Tokens -->
       <div id="tokensList" class="token-list"></div>
 
-      <!-- Start Manager -->
+      <!-- Start -->
       <form id="startForm" class="start-form">
         <button id="startBtn" class="start-btn">Start Manager</button>
       </form>
@@ -75,7 +65,7 @@
       <!-- Console -->
       <div id="consoleLog" class="console"></div>
 
-      <!-- Footer with GitHub -->
+      <!-- Footer -->
       <footer class="footer">
         <a href="https://github.com/YanivGeorgePerez" target="_blank" class="footer-link">
           <svg class="gh-icon" viewBox="0 0 16 16">
@@ -98,7 +88,6 @@
     </section>
   </main>
 
-  <!-- reCAPTCHA site key from server -->
   <script>
     window.recaptchaSiteKey = "<%= siteKey %>";
   </script>
