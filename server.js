@@ -30,9 +30,9 @@ const sessionMiddleware = session({
   resave: false,
   saveUninitialized: true,
   cookie: {
-    secure: true,
+    secure: false,
     httpOnly: true,
-    sameSite: 'lax'
+    sameSite: 'none'
   }
 });
 
