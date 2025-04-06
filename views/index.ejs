@@ -11,10 +11,10 @@
   <!-- Custom CSS -->
   <link rel="stylesheet" href="/styles.css" />
 
-  <!-- Axios, Socket.IO, reCAPTCHA -->
+  <!-- Axios, Socket.IO, reCAPTCHA v2 checkbox -->
   <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
-  <script src="https://www.google.com/recaptcha/api.js?render=explicit" async defer></script>
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </head>
 <body class="light">
   <!-- TOP NAV -->
@@ -53,14 +53,15 @@
 
       <!-- Add Token -->
       <div class="add-token-row">
-        <!-- 1) type='password' so the token is not visible while typing -->
-        <input
-          id="tokenInput"
-          type="password"
-          placeholder="Paste Discord token..."
-          class="token-input"
-        />
+        <input id="tokenInput" type="password" placeholder="Paste Discord token..." class="token-input" />
         <button id="addTokenBtn" class="add-btn">Add Token</button>
+      </div>
+
+      <!-- reCAPTCHA checkbox -->
+      <div style="margin-top: 1rem;" class="g-recaptcha"
+           data-sitekey="<%= siteKey %>"
+           data-callback="onCaptchaSuccess"
+           data-theme="light">
       </div>
 
       <!-- Tokens List -->
