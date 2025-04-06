@@ -24,15 +24,16 @@ app.set('views', path.join(__dirname, 'views'));
 // SESSION CONFIGURATION
 // ----------------------
 const sessionMiddleware = session({
-  secret: process.env.SESSION_SECRET || 'keyboard cat',
-  resave: false,
-  saveUninitialized: true,
-  cookie: {
-    secure: false, // Set true ONLY if behind HTTPS (like in production)
-    httpOnly: true,
-    sameSite: 'lax'
-  }
-});
+    secret: process.env.SESSION_SECRET || 'keyboard cat',
+    resave: false,
+    saveUninitialized: true,
+    cookie: {
+      secure: false,           // never set to true unless you're using HTTPS
+      httpOnly: true,
+      sameSite: 'lax'
+    }
+  });
+  
 
 app.use(sessionMiddleware);
 app.use(bodyParser.json());
@@ -158,15 +159,12 @@ app.get('/', (req, res) => {
 });
 
 // Fallback: only render index for non-API routes
-app.use((req, res, next) => {
-  if (req.path.startsWith('/api') || req.path.startsWith('/socket.io')) {
-    return res.status(404).json({ error: 'Not found' });
-  }
-
-  res.render('index', {
-    siteKey: process.env.CAPTCHA_SITE_KEY || ''
+app.use((req, res) => {
+    res.render('index', {
+      siteKey: process.env.CAPTCHA_SITE_KEY || ''
+    });
   });
-});
+  
 
 // ----------------------
 // START SERVER
